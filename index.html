@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chess Game with Tutorial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f0f0f0;
+        }
+        
+        #board {
+            width: 400px;
+            height: 400px;
+            border: 2px solid #333;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            margin: 20px;
+            background: #fff;
+        }
+        
+        .square {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .white {
+            background-color: #fff;
+        }
+        
+        .black {
+            background-color: #ccc;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 255, 0, 0.5) !important;
+        }
+        
+        .tutorial-highlight {
+            background-color: rgba(0, 255, 0, 0.3) !important;
+        }
+        
+        #tutorial-panel {
+            width: 400px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            margin: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .move-hint {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 255, 0, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="tutorial-panel">
+        <h2>Hướng dẫn cờ vua</h2>
+        <p id="tutorial-text">Chào mừng bạn đến với hướng dẫn cờ vua! Nhấn "Bắt đầu hướng dẫn" để học cách chơi.</p>
+    </div>
+    
+    <div id="board"></div>
+    
+    <div class="controls">
+        <button onclick="startTutorial()">Bắt đầu hướng dẫn</button>
+        <button onclick="resetGame()">Chơi mới</button>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const tutorialText = document.getElementById('tutorial-text');
+        let selectedPiece = null;
+        let currentPlayer = 'white';
+        let tutorialMode = false;
+        let tutorialStep = 0;
+
+        const pieces = {
+            white: {
+                king: '♔',
+                queen: '♕',
+                rook: '♖',
+                bishop: '♗',
+                knight: '♘',
+                pawn: '♙'
+            },
+            black: {
+                king: '♚',
+                queen: '♛',
+                rook: '♜',
+                bishop: '♝',
+                knight: '♞',
+                pawn: '♟'
+            }
+        };
+
+        const initialBoard = [
+            ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+            ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
+            ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']
+        ];
+
+        let gameBoard = JSON.parse(JSON.stringify(initialBoard));
+
+        function createBoard() {
+            board.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(i + j) % 2 === 0 ? 'white' : 'black'}`;
+                    square.dataset.row = i;
+                    square.dataset.col = j;
+                    
+                    if (gameBoard[i][j]) {
+                        const color = gameBoard[i][j][0] === 'w' ? 'white' : 'black';
+                        const pieceType = getPieceType(gameBoard[i][j][1]);
+                        square.textContent = pieces[color][pieceType];
+                    }
+                    
+                    square.addEventListener('click', handleSquareClick);
+                    board.appendChild(square);
+                }
+            }
+        }
+
+        function getPieceType(letter) {
+            const types = {
+                'k': 'king',
+                'q': 'queen',
+                'r': 'rook',
+                'b': 'bishop',
+                'n': 'knight',
+                'p': 'pawn'
+            };
+            return types[letter];
+        }
+
+        function handleSquareClick(event) {
+            const square = event.target;
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
+
+            if (tutorialMode) {
+                handleTutorialClick(row, col);
+                return;
+            }
+
+            if (selectedPiece) {
+                if (isValidMove(selectedPiece, row, col)) {
+                    movePiece(selectedPiece, row, col);
+                    selectedPiece = null;
+                    currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                }
+                clearHighlights();
+            } else if (gameBoard[row][col] && gameBoard[row][col][0] === (currentPlayer === 'white' ? 'w' : 'b')) {
+                selectedPiece = { row, col };
+                square.classList.add('highlight');
+                showValidMoves(row, col);
+            }
+        }
+
+        function isValidMove(from, toRow, toCol) {
+            const piece = gameBoard[from.row][from.col];
+            const pieceType = piece[1];
+            
+            // Basic move validation (simplified for this example)
+            switch (pieceType) {
+                case 'p': // Pawn
+                    const direction = piece[0] === 'w' ? -1 : 1;
+                    const startRow = piece[0] === 'w' ? 6 : 1;
+                    
+                    if (from.col === toCol && !gameBoard[toRow][toCol]) {
+                        if (from.row + direction === toRow) return true;
+                        if (from.row === startRow && from.row + 2 * direction === toRow) return true;
+                    }
+                    break;
+                    
+                case 'r': // Rook
+                    if (from.row === toRow || from.col === toCol) return true;
+                    break;
+                    
+                case 'n': // Knight
+                    const rowDiff = Math.abs(from.row - toRow);
+                    const colDiff = Math.abs(from.col - toCol);
+                    if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) return true;
+                    break;
+                    
+                case 'b': // Bishop
+                    if (Math.abs(from.row - toRow) === Math.abs(from.col - toCol)) return true;
+                    break;
+                    
+                case 'q': // Queen
+                    if (from.row === toRow || from.col === toCol || 
+                        Math.abs(from.row - toRow) === Math.abs(from.col - toCol)) return true;
+                    break;
+                    
+                case 'k': // King
+                    if (Math.abs(from.row - toRow) <= 1 && Math.abs(from.col - toCol) <= 1) return true;
+                    break;
+            }
+            
+            return false;
+        }
+
+        function movePiece(from, toRow, toCol) {
+            gameBoard[toRow][toCol] = gameBoard[from.row][from.col];
+            gameBoard[from.row][from.col] = '';
+            createBoard();
+        }
+
+        function clearHighlights() {
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                square.classList.remove('highlight');
+                square.classList.remove('tutorial-highlight');
+            });
+        }
+
+        function showValidMoves(row, col) {
+            const piece = gameBoard[row][col];
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (isValidMove({row, col}, i, j)) {
+                        const square = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
+                        square.classList.add('highlight');
+                    }
+                }
+            }
+        }
+
+        const tutorialSteps = [
+            {
+                text: "Chào mừng! Đầu tiên, hãy tìm hiểu về quân tốt. Quân tốt chỉ có thể di chuyển thẳng về phía trước.",
+                highlight: [{row: 6, col: 4}]
+            },
+            {
+                text: "Quân mã di chuyển theo hình chữ L: 2 ô theo một hướng và 1 ô theo hướng vuông góc.",
+                highlight: [{row: 7, col: 1}]
+            },
+            {
+                text: "Quân tượng di chuyển theo đường chéo, không giới hạn số ô.",
+                highlight: [{row: 7, col: 2}]
+            },
+            {
+                text: "Quân xe di chuyển theo hàng ngang hoặc dọc, không giới hạn số ô.",
+                highlight: [{row: 7, col: 0}]
+            },
+            {
+                text: "Quân hậu là quân mạnh nhất, có thể di chuyển theo cả đường chéo, ngang và dọc.",
+                highlight: [{row: 7, col: 3}]
+            },
+            {
+                text: "Quân vua di chuyển giống quân hậu nhưng chỉ một ô mỗi lần. Bảo vệ quân vua là nhiệm vụ quan trọng nhất!",
+                highlight: [{row: 7, col: 4}]
+            },
+            {
+                text: "Bây giờ bạn đã sẵn sàng để chơi! Nhấn 'Chơi mới' để bắt đầu ván cờ.",
+                highlight: []
+            }
+        ];
+
+        function startTutorial() {
+            tutorialMode = true;
+            tutorialStep = 0;
+            resetGame();
+            showTutorialStep();
+        }
+
+        function showTutorialStep() {
+            if (tutorialStep >= tutorialSteps.length) {
+                tutorialMode = false;
+                tutorialText.textContent = "Hướng dẫn đã kết thúc. Chúc bạn chơi vui!";
+                return;
+            }
+
+            const step = tutorialSteps[tutorialStep];
+            tutorialText.textContent = step.text;
+            clearHighlights();
+            
+            step.highlight.forEach(pos => {
+                const square = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
+                square.classList.add('tutorial-highlight');
+            });
+        }
+
+        function handleTutorialClick() {
+            tutorialStep++;
+            showTutorialStep();
+        }
+
+        function resetGame() {
+            gameBoard = JSON.parse(JSON.stringify(initialBoard));
+            currentPlayer = 'white';
+            selectedPiece = null;
+            clearHighlights();
+            createBoard();
+        }
+
+        // Initialize the game
+        createBoard();
+    </script>
+</body>
+</html>
