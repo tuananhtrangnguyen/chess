@@ -47,7 +47,11 @@
         .tutorial-highlight {
             background-color: rgba(0, 255, 0, 0.3) !important;
         }
-        
+
+        .move-hint {
+            background-color: rgba(0, 0, 255, 0.3) !important;
+        }
+
         #tutorial-panel {
             width: 400px;
             padding: 20px;
@@ -73,15 +77,6 @@
         button:hover {
             background: #45a049;
         }
-        
-        .move-hint {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: rgba(0, 255, 0, 0.5);
-            border-radius: 50%;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -100,29 +95,6 @@
     <script>
         const board = document.getElementById('board');
         const tutorialText = document.getElementById('tutorial-text');
-        let selectedPiece = null;
-        let currentPlayer = 'white';
-        let tutorialMode = false;
-        let tutorialStep = 0;
-
-        const pieces = {
-            white: {
-                king: '♔',
-                queen: '♕',
-                rook: '♖',
-                bishop: '♗',
-                knight: '♘',
-                pawn: '♙'
-            },
-            black: {
-                king: '♚',
-                queen: '♛',
-                rook: '♜',
-                bishop: '♝',
-                knight: '♞',
-                pawn: '♟'
-            }
-        };
 
         const initialBoard = [
             ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
@@ -146,192 +118,131 @@
                     square.dataset.row = i;
                     square.dataset.col = j;
                     
-                    if (gameBoard[i][j]) {
-                        const color = gameBoard[i][j][0] === 'w' ? 'white' : 'black';
-                        const pieceType = getPieceType(gameBoard[i][j][1]);
-                        square.textContent = pieces[color][pieceType];
+                    const piece = gameBoard[i][j];
+                    if (piece) {
+                        square.textContent = pieceSymbols[piece];
                     }
-                    
-                    square.addEventListener('click', handleSquareClick);
+
                     board.appendChild(square);
                 }
             }
         }
 
-        function getPieceType(letter) {
-            const types = {
-                'k': 'king',
-                'q': 'queen',
-                'r': 'rook',
-                'b': 'bishop',
-                'n': 'knight',
-                'p': 'pawn'
-            };
-            return types[letter];
-        }
-
-        function handleSquareClick(event) {
-            const square = event.target;
-            const row = parseInt(square.dataset.row);
-            const col = parseInt(square.dataset.col);
-
-            if (tutorialMode) {
-                handleTutorialClick(row, col);
-                return;
-            }
-
-            if (selectedPiece) {
-                if (isValidMove(selectedPiece, row, col)) {
-                    movePiece(selectedPiece, row, col);
-                    selectedPiece = null;
-                    currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
-                }
-                clearHighlights();
-            } else if (gameBoard[row][col] && gameBoard[row][col][0] === (currentPlayer === 'white' ? 'w' : 'b')) {
-                selectedPiece = { row, col };
-                square.classList.add('highlight');
-                showValidMoves(row, col);
-            }
-        }
-
-        function isValidMove(from, toRow, toCol) {
-            const piece = gameBoard[from.row][from.col];
-            const pieceType = piece[1];
-            
-            // Basic move validation (simplified for this example)
-            switch (pieceType) {
-                case 'p': // Pawn
-                    const direction = piece[0] === 'w' ? -1 : 1;
-                    const startRow = piece[0] === 'w' ? 6 : 1;
-                    
-                    if (from.col === toCol && !gameBoard[toRow][toCol]) {
-                        if (from.row + direction === toRow) return true;
-                        if (from.row === startRow && from.row + 2 * direction === toRow) return true;
-                    }
-                    break;
-                    
-                case 'r': // Rook
-                    if (from.row === toRow || from.col === toCol) return true;
-                    break;
-                    
-                case 'n': // Knight
-                    const rowDiff = Math.abs(from.row - toRow);
-                    const colDiff = Math.abs(from.col - toCol);
-                    if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) return true;
-                    break;
-                    
-                case 'b': // Bishop
-                    if (Math.abs(from.row - toRow) === Math.abs(from.col - toCol)) return true;
-                    break;
-                    
-                case 'q': // Queen
-                    if (from.row === toRow || from.col === toCol || 
-                        Math.abs(from.row - toRow) === Math.abs(from.col - toCol)) return true;
-                    break;
-                    
-                case 'k': // King
-                    if (Math.abs(from.row - toRow) <= 1 && Math.abs(from.col - toCol) <= 1) return true;
-                    break;
-            }
-            
-            return false;
-        }
-
-        function movePiece(from, toRow, toCol) {
-            gameBoard[toRow][toCol] = gameBoard[from.row][from.col];
-            gameBoard[from.row][from.col] = '';
-            createBoard();
-        }
-
-        function clearHighlights() {
-            const squares = document.querySelectorAll('.square');
-            squares.forEach(square => {
-                square.classList.remove('highlight');
-                square.classList.remove('tutorial-highlight');
-            });
-        }
-
-        function showValidMoves(row, col) {
-            const piece = gameBoard[row][col];
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    if (isValidMove({row, col}, i, j)) {
-                        const square = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
-                        square.classList.add('highlight');
-                    }
-                }
-            }
-        }
+        const pieceSymbols = {
+            'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔', 'wp': '♙',
+            'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚', 'bp': '♟'
+        };
 
         const tutorialSteps = [
-            {
-                text: "Chào mừng! Đầu tiên, hãy tìm hiểu về quân tốt. Quân tốt chỉ có thể di chuyển thẳng về phía trước.",
-                highlight: [{row: 6, col: 4}]
-            },
-            {
-                text: "Quân mã di chuyển theo hình chữ L: 2 ô theo một hướng và 1 ô theo hướng vuông góc.",
-                highlight: [{row: 7, col: 1}]
-            },
-            {
-                text: "Quân tượng di chuyển theo đường chéo, không giới hạn số ô.",
-                highlight: [{row: 7, col: 2}]
-            },
-            {
-                text: "Quân xe di chuyển theo hàng ngang hoặc dọc, không giới hạn số ô.",
-                highlight: [{row: 7, col: 0}]
-            },
-            {
-                text: "Quân hậu là quân mạnh nhất, có thể di chuyển theo cả đường chéo, ngang và dọc.",
-                highlight: [{row: 7, col: 3}]
-            },
-            {
-                text: "Quân vua di chuyển giống quân hậu nhưng chỉ một ô mỗi lần. Bảo vệ quân vua là nhiệm vụ quan trọng nhất!",
-                highlight: [{row: 7, col: 4}]
-            },
-            {
-                text: "Bây giờ bạn đã sẵn sàng để chơi! Nhấn 'Chơi mới' để bắt đầu ván cờ.",
-                highlight: []
-            }
+            { text: "Quân tốt di chuyển thẳng lên phía trước.", piece: { row: 6, col: 4 } },
+            { text: "Quân mã di chuyển theo hình chữ L.", piece: { row: 7, col: 1 } },
+            { text: "Quân tượng di chuyển chéo không giới hạn số ô.", piece: { row: 7, col: 2 } },
+            { text: "Quân xe di chuyển ngang hoặc dọc không giới hạn.", piece: { row: 7, col: 0 } },
+            { text: "Quân hậu mạnh nhất, di chuyển ngang, dọc, chéo.", piece: { row: 7, col: 3 } },
+            { text: "Quân vua di chuyển 1 ô theo mọi hướng.", piece: { row: 7, col: 4 } },
+            { text: "Bạn đã sẵn sàng để chơi!", piece: null }
         ];
 
+        let tutorialStep = 0;
+
         function startTutorial() {
-            tutorialMode = true;
             tutorialStep = 0;
             resetGame();
             showTutorialStep();
         }
 
         function showTutorialStep() {
-            if (tutorialStep >= tutorialSteps.length) {
-                tutorialMode = false;
-                tutorialText.textContent = "Hướng dẫn đã kết thúc. Chúc bạn chơi vui!";
-                return;
-            }
-
             const step = tutorialSteps[tutorialStep];
             tutorialText.textContent = step.text;
             clearHighlights();
-            
-            step.highlight.forEach(pos => {
-                const square = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
+
+            if (step.piece) {
+                const { row, col } = step.piece;
+                const square = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
                 square.classList.add('tutorial-highlight');
+                showValidMoves(row, col);
+            }
+        }
+
+        function showValidMoves(row, col) {
+            const moves = getValidMoves(row, col);
+            moves.forEach(move => {
+                const square = document.querySelector(`[data-row='${move.row}'][data-col='${move.col}']`);
+                square.classList.add('move-hint');
             });
         }
 
-        function handleTutorialClick() {
-            tutorialStep++;
-            showTutorialStep();
+        function getValidMoves(row, col) {
+            const piece = gameBoard[row][col];
+            const moves = [];
+
+            if (!piece) return moves;
+
+            const isWhite = piece[0] === 'w';
+            const type = piece[1];
+
+            if (type === 'p') {
+                const dir = isWhite ? -1 : 1;
+                if (gameBoard[row + dir]?.[col] === '') moves.push({ row: row + dir, col });
+            }
+            if (type === 'n') {
+                [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]].forEach(([dx, dy]) => {
+                    const [r, c] = [row + dx, col + dy];
+                    if (r >= 0 && r < 8 && c >= 0 && c < 8) moves.push({ row: r, col: c });
+                });
+            }
+            if (type === 'b' || type === 'q') {
+                for (let d of [[1,1], [1,-1], [-1,1], [-1,-1]]) {
+                    for (let i = 1; i < 8; i++) {
+                        const [r, c] = [row + d[0] * i, col + d[1] * i];
+                        if (r >= 0 && r < 8 && c >= 0 && c < 8 && gameBoard[r][c] === '') {
+                            moves.push({ row: r, col: c });
+                        } else break;
+                    }
+                }
+            }
+            if (type === 'r' || type === 'q') {
+                for (let d of [[1,0], [-1,0], [0,1], [0,-1]]) {
+                    for (let i = 1; i < 8; i++) {
+                        const [r, c] = [row + d[0] * i, col + d[1] * i];
+                        if (r >= 0 && r < 8 && c >= 0 && c < 8 && gameBoard[r][c] === '') {
+                            moves.push({ row: r, col: c });
+                        } else break;
+                    }
+                }
+            }
+            if (type === 'k') {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx !== 0 || dy !== 0) {
+                            const [r, c] = [row + dx, col + dy];
+                            if (r >= 0 && r < 8 && c >= 0 && c < 8) moves.push({ row: r, col: c });
+                        }
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.square').forEach(square => {
+                square.classList.remove('tutorial-highlight', 'move-hint');
+            });
         }
 
         function resetGame() {
             gameBoard = JSON.parse(JSON.stringify(initialBoard));
-            currentPlayer = 'white';
-            selectedPiece = null;
-            clearHighlights();
             createBoard();
         }
 
-        // Initialize the game
+        document.addEventListener('click', () => {
+            if (tutorialStep < tutorialSteps.length - 1) {
+                tutorialStep++;
+                showTutorialStep();
+            }
+        });
+
         createBoard();
     </script>
 </body>
