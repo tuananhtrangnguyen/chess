@@ -1,249 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Chess Game with Tutorial</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #f0f0f0;
-        }
-        
-        #board {
-            width: 400px;
-            height: 400px;
-            border: 2px solid #333;
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            margin: 20px;
-            background: #fff;
-        }
-        
-        .square {
-            width: 50px;
-            height: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 30px;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .white {
-            background-color: #fff;
-        }
-        
-        .black {
-            background-color: #ccc;
-        }
-        
-        .highlight {
-            background-color: rgba(255, 255, 0, 0.5) !important;
-        }
-        
-        .tutorial-highlight {
-            background-color: rgba(0, 255, 0, 0.3) !important;
-        }
-
-        .move-hint {
-            background-color: rgba(0, 0, 255, 0.3) !important;
-        }
-
-        #tutorial-panel {
-            width: 400px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .controls {
-            margin: 20px;
-        }
-        
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-        }
-        
-        button:hover {
-            background: #45a049;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Save our date</title>
+  <style>
+    /* Background baby blue và căn giữa toàn bộ nội dung */
+    body {
+      background-color: #89CFF0; /* Màu baby blue */
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    /* Hộp thiệp (envelope) */
+    .envelope {
+      width: 300px;
+      height: 200px;
+      position: relative;
+      cursor: pointer;
+      perspective: 1000px; /* Để tạo hiệu ứng 3D cho flap */
+    }
+    /* Phần dưới của thiệp chứa nội dung sau khi mở */
+    .envelope-body {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 60%;
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 0 0 8px 8px;
+      overflow: hidden;
+      z-index: 1;
+    }
+    /* Phần nắp thiệp có chứa hình trái tim, chữ “Click Here” và mũi tên */
+    .envelope-flap {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      height: 50%;
+      background: #fff;
+      border: 2px solid #ccc;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      transform-origin: top;
+      transition: transform 0.8s ease;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Khi thêm class open thì nắp mở ra (xoay về phía sau) */
+    .envelope.open .envelope-flap {
+      transform: rotateX(-180deg);
+    }
+    /* Hình trái tim – có thể thay URL theo ý bạn */
+    .heart {
+      width: 50px;
+      height: 50px;
+    }
+    /* Chữ “Click Here” với hiệu ứng nhịp (pulse) */
+    .click-here {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #ff4081;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    /* Mũi tên chỉ vào trái tim với hiệu ứng bounce */
+    .arrow {
+      position: absolute;
+      bottom: -40px;
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    /* Nội dung thiệp hiển thị sau khi mở */
+    .card-content {
+      position: absolute;
+      top: 70%;
+      left: 50%;
+      transform: translate(-50%, 20%);
+      width: 90%;
+      background: #fff;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.8s, transform 0.5s ease 0.8s;
+      z-index: 0;
+    }
+    /* Khi thiệp mở, nội dung xuất hiện */
+    .envelope.open .card-content {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
 </head>
 <body>
-    <div id="tutorial-panel">
-        <h2>Hướng dẫn cờ vua</h2>
-        <p id="tutorial-text">Chào mừng bạn đến với hướng dẫn cờ vua! Nhấn "Bắt đầu hướng dẫn" để học cách chơi.</p>
+  <!-- Cấu trúc thiệp -->
+  <div class="envelope" id="envelope">
+    <!-- Phần dưới thiệp chứa nội dung mời đi date -->
+    <div class="envelope-body">
+      <div class="card-content" id="cardContent">
+        <h2>Xin mời đi Date!</h2>
+        <p>Mình muốn nói rằng: bạn thật đặc biệt và mình mong được chia sẻ những khoảnh khắc tuyệt vời cùng bạn.</p>
+      </div>
     </div>
-    
-    <div id="board"></div>
-    
-    <div class="controls">
-        <button onclick="startTutorial()">Bắt đầu hướng dẫn</button>
-        <button onclick="resetGame()">Chơi mới</button>
+    <!-- Nắp thiệp có hình trái tim, chữ Click Here và mũi tên -->
+    <div class="envelope-flap">
+      <!-- Bạn có thể thay URL hình trái tim bên dưới -->
+      <img src="https://via.placeholder.com/50/FFD700/000000?text=❤" alt="Heart" class="heart" />
+      <div class="click-here">Click Here</div>
+      <!-- Bạn có thể thay URL hình mũi tên bên dưới -->
+      <div class="arrow">
+        <img src="https://via.placeholder.com/30?text=↓" alt="Arrow" width="30" height="30" />
+      </div>
     </div>
+  </div>
 
-    <script>
-        const board = document.getElementById('board');
-        const tutorialText = document.getElementById('tutorial-text');
-
-        const initialBoard = [
-            ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
-            ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
-            ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']
-        ];
-
-        let gameBoard = JSON.parse(JSON.stringify(initialBoard));
-
-        function createBoard() {
-            board.innerHTML = '';
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    const square = document.createElement('div');
-                    square.className = `square ${(i + j) % 2 === 0 ? 'white' : 'black'}`;
-                    square.dataset.row = i;
-                    square.dataset.col = j;
-                    
-                    const piece = gameBoard[i][j];
-                    if (piece) {
-                        square.textContent = pieceSymbols[piece];
-                    }
-
-                    board.appendChild(square);
-                }
-            }
-        }
-
-        const pieceSymbols = {
-            'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔', 'wp': '♙',
-            'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚', 'bp': '♟'
-        };
-
-        const tutorialSteps = [
-            { text: "Quân tốt di chuyển thẳng lên phía trước.", piece: { row: 6, col: 4 } },
-            { text: "Quân mã di chuyển theo hình chữ L.", piece: { row: 7, col: 1 } },
-            { text: "Quân tượng di chuyển chéo không giới hạn số ô.", piece: { row: 7, col: 2 } },
-            { text: "Quân xe di chuyển ngang hoặc dọc không giới hạn.", piece: { row: 7, col: 0 } },
-            { text: "Quân hậu mạnh nhất, di chuyển ngang, dọc, chéo.", piece: { row: 7, col: 3 } },
-            { text: "Quân vua di chuyển 1 ô theo mọi hướng.", piece: { row: 7, col: 4 } },
-            { text: "Bạn đã sẵn sàng để chơi!", piece: null }
-        ];
-
-        let tutorialStep = 0;
-
-        function startTutorial() {
-            tutorialStep = 0;
-            resetGame();
-            showTutorialStep();
-        }
-
-        function showTutorialStep() {
-            const step = tutorialSteps[tutorialStep];
-            tutorialText.textContent = step.text;
-            clearHighlights();
-
-            if (step.piece) {
-                const { row, col } = step.piece;
-                const square = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
-                square.classList.add('tutorial-highlight');
-                showValidMoves(row, col);
-            }
-        }
-
-        function showValidMoves(row, col) {
-            const moves = getValidMoves(row, col);
-            moves.forEach(move => {
-                const square = document.querySelector(`[data-row='${move.row}'][data-col='${move.col}']`);
-                square.classList.add('move-hint');
-            });
-        }
-
-        function getValidMoves(row, col) {
-            const piece = gameBoard[row][col];
-            const moves = [];
-
-            if (!piece) return moves;
-
-            const isWhite = piece[0] === 'w';
-            const type = piece[1];
-
-            if (type === 'p') {
-                const dir = isWhite ? -1 : 1;
-                if (gameBoard[row + dir]?.[col] === '') moves.push({ row: row + dir, col });
-            }
-            if (type === 'n') {
-                [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]].forEach(([dx, dy]) => {
-                    const [r, c] = [row + dx, col + dy];
-                    if (r >= 0 && r < 8 && c >= 0 && c < 8) moves.push({ row: r, col: c });
-                });
-            }
-            if (type === 'b' || type === 'q') {
-                for (let d of [[1,1], [1,-1], [-1,1], [-1,-1]]) {
-                    for (let i = 1; i < 8; i++) {
-                        const [r, c] = [row + d[0] * i, col + d[1] * i];
-                        if (r >= 0 && r < 8 && c >= 0 && c < 8 && gameBoard[r][c] === '') {
-                            moves.push({ row: r, col: c });
-                        } else break;
-                    }
-                }
-            }
-            if (type === 'r' || type === 'q') {
-                for (let d of [[1,0], [-1,0], [0,1], [0,-1]]) {
-                    for (let i = 1; i < 8; i++) {
-                        const [r, c] = [row + d[0] * i, col + d[1] * i];
-                        if (r >= 0 && r < 8 && c >= 0 && c < 8 && gameBoard[r][c] === '') {
-                            moves.push({ row: r, col: c });
-                        } else break;
-                    }
-                }
-            }
-            if (type === 'k') {
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        if (dx !== 0 || dy !== 0) {
-                            const [r, c] = [row + dx, col + dy];
-                            if (r >= 0 && r < 8 && c >= 0 && c < 8) moves.push({ row: r, col: c });
-                        }
-                    }
-                }
-            }
-
-            return moves;
-        }
-
-        function clearHighlights() {
-            document.querySelectorAll('.square').forEach(square => {
-                square.classList.remove('tutorial-highlight', 'move-hint');
-            });
-        }
-
-        function resetGame() {
-            gameBoard = JSON.parse(JSON.stringify(initialBoard));
-            createBoard();
-        }
-
-        document.addEventListener('click', () => {
-            if (tutorialStep < tutorialSteps.length - 1) {
-                tutorialStep++;
-                showTutorialStep();
-            }
-        });
-
-        createBoard();
-    </script>
+  <script>
+    // Khi click vào thiệp, thêm class "open" để kích hoạt animation mở thiệp
+    document.getElementById('envelope').addEventListener('click', function(){
+      this.classList.add('open');
+    });
+  </script>
 </body>
 </html>
